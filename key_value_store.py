@@ -8,6 +8,7 @@ from redis import Redis
 # first-party
 from tcex.input.field_type.sensitive import Sensitive
 
+from ...pleb.cached_property import cached_property
 from ...pleb.scoped_property import scoped_property
 from ...requests_tc.tc_session import TcSession
 from .key_value_api import KeyValueApi
@@ -64,6 +65,14 @@ class KeyValueStore:
             return KeyValueMock()
 
         raise RuntimeError(f'Invalid KV Store Type: ({self.tc_kvstore_type})')
+
+    @cached_property
+    def client_kvr(self) -> KeyValueRedis:
+        """Return the Redis KV store client.
+
+        This property should only be used when the KV store type is Redis.
+        """
+        return KeyValueRedis(self.redis_client)
 
     @staticmethod
     def get_redis_client(
