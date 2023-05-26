@@ -5,9 +5,7 @@ import logging
 # third-party
 from redis import Redis
 
-# first-party
-from tcex.input.field_type.sensitive import Sensitive
-
+from ...input.field_type.sensitive import Sensitive
 from ...pleb.cached_property import cached_property
 from ...pleb.scoped_property import scoped_property
 from ...requests_tc.tc_session import TcSession
