@@ -30,14 +30,23 @@ class RedisClient:
         port: int = 6379,
         db: int = 0,
         blocking_pool: bool = False,
-        **kwargs
+        **kwargs,
     ):
         """Initialize class properties"""
+        password = kwargs.pop('password', None)
+        username = kwargs.pop('username', None)
+
         pool = redis.ConnectionPool
         if blocking_pool:
             kwargs.pop('blocking_pool')  # remove blocking_pool key
             pool = redis.BlockingConnectionPool
-        self.pool = pool(host=host, port=port, db=db, **kwargs)
+
+        if username and password:
+            self.pool = pool(
+                host=host, port=port, db=db, username=username, password=password, **kwargs
+            )
+        else:
+            self.pool = pool(host=host, port=port, db=db, **kwargs)
 
     @cached_property
     def client(self) -> redis.Redis:

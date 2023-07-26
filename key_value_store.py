@@ -5,6 +5,8 @@ import logging
 # third-party
 from redis import Redis
 
+from ...input.field_type.sensitive import Sensitive
+from ...pleb.cached_property import cached_property
 from ...pleb.scoped_property import scoped_property
 from ...requests_tc.tc_session import TcSession
 from .key_value_api import KeyValueApi
@@ -25,12 +27,16 @@ class KeyValueStore:
         tc_kvstore_host: str,
         tc_kvstore_port: int,
         tc_kvstore_type: str,
+        tc_kvstore_pass: Sensitive | None = None,
+        tc_kvstore_user: str | None = None,
     ):
         """Initialize the class properties."""
         self.session_tc = session_tc
         self.tc_kvstore_host = tc_kvstore_host
+        self.tc_kvstore_pass = tc_kvstore_pass
         self.tc_kvstore_port = tc_kvstore_port
         self.tc_kvstore_type = tc_kvstore_type
+        self.tc_kvstore_user = tc_kvstore_user
 
         # properties
         self.log = _logger
@@ -58,6 +64,14 @@ class KeyValueStore:
 
         raise RuntimeError(f'Invalid KV Store Type: ({self.tc_kvstore_type})')
 
+    @cached_property
+    def client_kvr(self) -> KeyValueRedis:
+        """Return the Redis KV store client.
+
+        This property should only be used when the KV store type is Redis.
+        """
+        return KeyValueRedis(self.redis_client)
+
     @staticmethod
     def get_redis_client(
         host: str, port: int, db: int = 0, blocking_pool: bool = False, **kwargs
@@ -76,10 +90,14 @@ class KeyValueStore:
         Keyword Args:
             errors (str): The REDIS errors policy (e.g. strict).
             max_connections (int): The maximum number of connections to REDIS.
-            password (str): The REDIS password.
+            password (Sensitive): The REDIS password.
             socket_timeout (int): The REDIS socket timeout.
             timeout (int): The REDIS Blocking Connection Pool timeout value.
+            username (str): The REDIS username.
         """
+        # get value from Sensitive value before passing to Redis
+        password = kwargs.get('password')
+        kwargs['password'] = password.value if isinstance(password, Sensitive) else password
         return RedisClient(
             host=host, port=port, db=db, blocking_pool=blocking_pool, **kwargs
         ).client
@@ -91,4 +109,6 @@ class KeyValueStore:
             host=self.tc_kvstore_host,
             port=self.tc_kvstore_port,
             db=0,
+            username=self.tc_kvstore_user,
+            password=self.tc_kvstore_pass,
         )
