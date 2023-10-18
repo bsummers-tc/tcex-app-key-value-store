@@ -13,6 +13,7 @@ from .key_value_api import KeyValueApi
 from .key_value_mock import KeyValueMock
 from .key_value_redis import KeyValueRedis
 from .redis_client import RedisClient
+from .redis_client_ssl import RedisClientSsl
 
 # get logger
 _logger = logging.getLogger(__name__.split('.', maxsplit=1)[0])
@@ -27,8 +28,14 @@ class KeyValueStore:
         tc_kvstore_host: str,
         tc_kvstore_port: int,
         tc_kvstore_type: str,
+        tc_playbook_kvstore_id: int = 0,
         tc_kvstore_pass: Sensitive | None = None,
         tc_kvstore_user: str | None = None,
+        tc_kvstore_tls_enabled: bool = False,
+        tc_kvstore_tls_port: int = 6379,
+        tc_svc_broker_cacert_file: str | None = None,
+        tc_svc_broker_cert_file: str | None = None,
+        tc_svc_broker_key_file: str | None = None,
     ):
         """Initialize the class properties."""
         self.session_tc = session_tc
@@ -37,6 +44,12 @@ class KeyValueStore:
         self.tc_kvstore_port = tc_kvstore_port
         self.tc_kvstore_type = tc_kvstore_type
         self.tc_kvstore_user = tc_kvstore_user
+        self.tc_kvstore_tls_enabled = tc_kvstore_tls_enabled
+        self.tc_kvstore_tls_port = tc_kvstore_tls_port
+        self.tc_playbook_kvstore_id = tc_playbook_kvstore_id
+        self.tc_svc_broker_cacert_file = tc_svc_broker_cacert_file
+        self.tc_svc_broker_cert_file = tc_svc_broker_cert_file
+        self.tc_svc_broker_key_file = tc_svc_broker_key_file
 
         # properties
         self.log = _logger
@@ -73,9 +86,7 @@ class KeyValueStore:
         return KeyValueRedis(self.redis_client)
 
     @staticmethod
-    def get_redis_client(
-        host: str, port: int, db: int = 0, blocking_pool: bool = False, **kwargs
-    ) -> Redis:
+    def get_redis_client(host: str, port: int, db: int = 0, **kwargs) -> Redis:
         """Return a *new* instance of Redis client.
 
         For a full list of kwargs see https://redis-py.readthedocs.io/en/latest/#redis.Connection.
@@ -84,7 +95,6 @@ class KeyValueStore:
             host: The REDIS host. Defaults to localhost.
             port: The REDIS port. Defaults to 6379.
             db: The REDIS db. Defaults to 0.
-            blocking_pool: Use BlockingConnectionPool instead of ConnectionPool.
             **kwargs: Additional keyword arguments.
 
         Keyword Args:
@@ -95,20 +105,67 @@ class KeyValueStore:
             timeout (int): The REDIS Blocking Connection Pool timeout value.
             username (str): The REDIS username.
         """
-        # get value from Sensitive value before passing to Redis
-        password = kwargs.get('password')
-        kwargs['password'] = password.value if isinstance(password, Sensitive) else password
-        return RedisClient(
-            host=host, port=port, db=db, blocking_pool=blocking_pool, **kwargs
+        return RedisClient(host=host, port=port, db=db, **kwargs).client
+
+    @staticmethod
+    def get_redis_client_ssl(
+        host: str,
+        port: int,
+        db: int = 0,
+        username: str | None = None,
+        password: Sensitive | str | None = None,
+        ssl_ca_certs: str | None = None,
+        ssl_certfile: str | None = None,
+        ssl_keyfile: str | None = None,
+        **kwargs,
+    ) -> Redis:
+        """Return a *new* instance of Redis client.
+
+        For a full list of kwargs see https://redis-py.readthedocs.io/en/latest/#redis.Connection.
+
+        Args:
+            host: The REDIS host. Defaults to localhost.
+            port: The REDIS port. Defaults to 6379.
+            db: The REDIS db. Defaults to 0.
+            username (str, kwargs): The REDIS username.
+            password (str, kwargs): The REDIS password.
+            **kwargs: Additional keyword arguments.
+
+        Keyword Args:
+            errors (str): The REDIS errors policy (e.g. strict).
+            max_connections (int): The maximum number of connections to REDIS.
+            socket_timeout (int): The REDIS socket timeout.
+            timeout (int): The REDIS Blocking Connection Pool timeout value.
+        """
+        password = password.value if isinstance(password, Sensitive) else password
+        return RedisClientSsl(
+            host=host,
+            port=port,
+            db=db,
+            username=username,
+            password=password,
+            ssl_ca_certs=ssl_ca_certs,
+            ssl_certfile=ssl_certfile,
+            ssl_keyfile=ssl_keyfile,
+            **kwargs,
         ).client
 
     @scoped_property
     def redis_client(self) -> Redis:
         """Return redis client instance configure for Playbook/Service Apps."""
+        if self.tc_kvstore_tls_enabled is True:
+            return self.get_redis_client_ssl(
+                host=self.tc_kvstore_host,
+                port=self.tc_kvstore_tls_port,
+                db=self.tc_playbook_kvstore_id,
+                username=self.tc_kvstore_user,
+                password=self.tc_kvstore_pass,
+                ssl_ca_certs=self.tc_svc_broker_cacert_file,
+                ssl_certfile=self.tc_svc_broker_cert_file,
+                ssl_keyfile=self.tc_svc_broker_key_file,
+            )
         return self.get_redis_client(
             host=self.tc_kvstore_host,
             port=self.tc_kvstore_port,
             db=0,
-            username=self.tc_kvstore_user,
-            password=self.tc_kvstore_pass,
         )
