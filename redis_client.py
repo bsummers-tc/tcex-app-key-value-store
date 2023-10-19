@@ -16,7 +16,6 @@ class RedisClient:
         host: The Redis host. Defaults to localhost.
         port: The Redis port. Defaults to 6379.
         db: The Redis db. Defaults to 0.
-        blocking_pool: Use BlockingConnectionPool instead of ConnectionPool.
         errors (str, kwargs): The REDIS errors policy (e.g. strict).
         max_connections (int, kwargs): The maximum number of connections to REDIS.
         password (str, kwargs): The REDIS password.
@@ -29,24 +28,10 @@ class RedisClient:
         host: str = 'localhost',
         port: int = 6379,
         db: int = 0,
-        blocking_pool: bool = False,
         **kwargs,
     ):
         """Initialize class properties"""
-        password = kwargs.pop('password', None)
-        username = kwargs.pop('username', None)
-
-        pool = redis.ConnectionPool
-        if blocking_pool:
-            kwargs.pop('blocking_pool')  # remove blocking_pool key
-            pool = redis.BlockingConnectionPool
-
-        if username and password:
-            self.pool = pool(
-                host=host, port=port, db=db, username=username, password=password, **kwargs
-            )
-        else:
-            self.pool = pool(host=host, port=port, db=db, **kwargs)
+        self.pool = redis.ConnectionPool(host=host, port=port, db=db, **kwargs)
 
     @cached_property
     def client(self) -> redis.Redis:
