@@ -1,4 +1,5 @@
 """TcEx Framework Module"""
+
 # standard library
 import logging
 
@@ -122,14 +123,6 @@ class KeyValueStore:
         """Return a *new* instance of Redis client.
 
         For a full list of kwargs see https://redis-py.readthedocs.io/en/latest/#redis.Connection.
-
-        Args:
-            host: The REDIS host. Defaults to localhost.
-            port: The REDIS port. Defaults to 6379.
-            db: The REDIS db. Defaults to 0.
-            username (str, kwargs): The REDIS username.
-            password (str, kwargs): The REDIS password.
-            **kwargs: Additional keyword arguments.
 
         Keyword Args:
             errors (str): The REDIS errors policy (e.g. strict).
