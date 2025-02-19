@@ -28,8 +28,6 @@ class RedisClientSsl:
         timeout (int, kwargs): The REDIS Blocking Connection Pool timeout value.
     """
 
-    _instances = []
-
     def __init__(
         self,
         host: str = 'localhost',
@@ -63,17 +61,11 @@ class RedisClientSsl:
             ssl_keyfile=ssl_keyfile,
             **kwargs,
         )
-        self._instances.append(self)
+        atexit.register(self.pool.disconnect)
 
     @cached_property
     def client(self) -> redis.Redis:
         """Return an instance of redis.client.Redis."""
-        return redis.Redis(connection_pool=self.pool)
-
-    @atexit.register
-    @staticmethod
-    def close():
-        """Close the Redis connection pool."""
-        for instance in RedisClientSsl._instances:
-            instance.pool.disconnect()
-            instance.client.close()
+        client = redis.Redis(connection_pool=self.pool)
+        atexit.register(client.close)
+        return client
