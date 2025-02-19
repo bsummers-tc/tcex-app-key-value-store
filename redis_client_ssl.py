@@ -1,6 +1,7 @@
 """TcEx Framework Module"""
 
 # standard library
+import atexit
 from functools import cached_property
 
 # third-party
@@ -60,8 +61,11 @@ class RedisClientSsl:
             ssl_keyfile=ssl_keyfile,
             **kwargs,
         )
+        atexit.register(self.pool.disconnect)
 
     @cached_property
     def client(self) -> redis.Redis:
         """Return an instance of redis.client.Redis."""
-        return redis.Redis(connection_pool=self.pool)
+        client = redis.Redis(connection_pool=self.pool)
+        atexit.register(client.close)
+        return client
