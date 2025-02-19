@@ -1,6 +1,7 @@
 """TcEx Framework Module"""
 
 # standard library
+import atexit
 from functools import cached_property
 
 # third-party
@@ -26,6 +27,8 @@ class RedisClientSsl:
         socket_timeout (int, kwargs): The REDIS socket timeout.
         timeout (int, kwargs): The REDIS Blocking Connection Pool timeout value.
     """
+
+    _instances = []
 
     def __init__(
         self,
@@ -60,8 +63,17 @@ class RedisClientSsl:
             ssl_keyfile=ssl_keyfile,
             **kwargs,
         )
+        self._instances.append(self)
 
     @cached_property
     def client(self) -> redis.Redis:
         """Return an instance of redis.client.Redis."""
         return redis.Redis(connection_pool=self.pool)
+
+    @atexit.register
+    @staticmethod
+    def close():
+        """Close the Redis connection pool."""
+        for instance in RedisClientSsl._instances:
+            instance.pool.disconnect()
+            instance.client.close()
