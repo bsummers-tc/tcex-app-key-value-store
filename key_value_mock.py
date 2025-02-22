@@ -3,6 +3,7 @@
 # standard library
 from copy import deepcopy
 from threading import Lock
+from typing import ClassVar
 
 from .key_value_abc import KeyValueABC
 
@@ -13,7 +14,7 @@ class KeyValueMock(KeyValueABC):
     Purely in-memory implementation of the KeyValueABC for local testing only.
     """
 
-    data = {}
+    data: ClassVar = {}
 
     def __init__(self):
         """Initialize the Class properties."""

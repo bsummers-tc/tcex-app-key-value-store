@@ -67,16 +67,16 @@ class KeyValueStore:
             return KeyValueRedis(self.redis_client)  # type: ignore
 
         if self.tc_kvstore_type == 'TCKeyValueAPI':
-            return KeyValueApi(self.session_tc)  # pylint: disable=no-member
+            return KeyValueApi(self.session_tc)
 
         if self.tc_kvstore_type == 'Mock':
             self.log.warning(
-                'Using mock key-value store. '
-                'This should *never* happen when running in-platform.'
+                'Using mock key-value store. This should *never* happen when running in-platform.'
             )
             return KeyValueMock()
 
-        raise RuntimeError(f'Invalid KV Store Type: ({self.tc_kvstore_type})')
+        ex_msg = f'Invalid KV Store Type: ({self.tc_kvstore_type})'
+        raise RuntimeError(ex_msg)
 
     @cached_property
     def client_kvr(self) -> KeyValueRedis:
@@ -123,12 +123,6 @@ class KeyValueStore:
         """Return a *new* instance of Redis client.
 
         For a full list of kwargs see https://redis-py.readthedocs.io/en/latest/#redis.Connection.
-
-        Keyword Args:
-            errors (str): The REDIS errors policy (e.g. strict).
-            max_connections (int): The maximum number of connections to REDIS.
-            socket_timeout (int): The REDIS socket timeout.
-            timeout (int): The REDIS Blocking Connection Pool timeout value.
         """
         password = password.value if isinstance(password, Sensitive) else password
         return RedisClientSsl(
