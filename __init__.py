@@ -1,6 +1,5 @@
 """TcEx Framework Module"""
 
-# flake8:noqa
 from .key_value_api import KeyValueApi
 from .key_value_mock import KeyValueMock
 from .key_value_redis import KeyValueRedis
