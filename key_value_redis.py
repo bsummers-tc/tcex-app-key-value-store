@@ -1,6 +1,5 @@
 """TcEx Framework Module"""
 
-# third-party
 from redis import Redis
 
 from .key_value_abc import KeyValueABC
