@@ -1,10 +1,8 @@
 """TcEx Framework Module"""
 
-# standard library
 import atexit
 from functools import cached_property
 
-# third-party
 import redis
 
 

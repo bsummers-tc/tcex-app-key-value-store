@@ -1,10 +1,8 @@
 """TcEx Framework Module"""
 
-# standard library
 from typing import Any
 from urllib.parse import quote
 
-# third-party
 from requests import Session
 
 from .key_value_abc import KeyValueABC

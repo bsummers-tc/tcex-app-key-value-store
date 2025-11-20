@@ -1,9 +1,7 @@
 """TcEx Framework Module"""
 
-# standard library
 import logging
 
-# third-party
 from redis import Redis
 
 from ...input.field_type.sensitive import Sensitive
