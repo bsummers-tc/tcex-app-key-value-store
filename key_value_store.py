@@ -6,7 +6,6 @@ from redis import Redis
 
 from ...input.field_type.sensitive import Sensitive
 from ...pleb.cached_property import cached_property
-from ...pleb.scoped_property import scoped_property
 from ...requests_tc.tc_session import TcSession
 from .key_value_api import KeyValueApi
 from .key_value_mock import KeyValueMock
@@ -53,7 +52,7 @@ class KeyValueStore:
         # properties
         self.log = _logger
 
-    @scoped_property
+    @cached_property
     def client(self) -> KeyValueApi | KeyValueMock | KeyValueRedis:
         """Return the correct KV store for this execution.
 
@@ -61,8 +60,7 @@ class KeyValueStore:
         while the Redis kvstore wraps a few other Redis methods.
         """
         if self.tc_kvstore_type == 'Redis':
-            # submodule doesn't have scoped_property decorator, so resolution of type doesn't work
-            return KeyValueRedis(self.redis_client)  # type: ignore
+            return KeyValueRedis(self.redis_client)
 
         if self.tc_kvstore_type == 'TCKeyValueAPI':
             return KeyValueApi(self.session_tc)
@@ -135,7 +133,7 @@ class KeyValueStore:
             **kwargs,
         ).client
 
-    @scoped_property
+    @cached_property
     def redis_client(self) -> Redis:
         """Return redis client instance configure for Playbook/Service Apps."""
         if self.tc_kvstore_tls_enabled is True:
